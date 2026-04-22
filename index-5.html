@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AIA Tracker — All In Analytics by KEVPICKS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --green: #00ff6a;
+    --green-dim: rgba(0, 255, 106, 0.12);
+    --green-glow: rgba(0, 255, 106, 0.25);
+    --red: #ff3b3b;
+    --red-dim: rgba(255, 59, 59, 0.12);
+    --yellow: #ffd000;
+    --yellow-dim: rgba(255, 208, 0, 0.12);
+    --bg: #030303;
+    --surface: #0a0a0a;
+    --card: #0f0f0f;
+    --card-hover: #161616;
+    --border: #1c1c1c;
+    --text: #f0f0f0;
+    --text-mid: #8a8a8a;
+    --text-dim: #4a4a4a;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Outfit', -apple-system, sans-serif;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Subtle grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: 
+      linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+    background-size: 60px 60px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrap {
+    position: relative;
+    z-index: 1;
+    max-width: 820px;
+    margin: 0 auto;
+    padding: 0 20px;
+  }
+
+  /* ===== HEADER ===== */
+  .header {
+    padding: 36px 0 24px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .logo {
+    width: 46px;
+    height: 46px;
+    background: var(--green);
+    border-radius: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 15px;
+    color: #000;
+    letter-spacing: -0.5px;
+    box-shadow: 0 0 20px var(--green-glow);
+  }
+
+  .brand-info h1 {
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -0.3px;
+    line-height: 1.1;
+  }
+
+  .brand-info p {
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+
+  .live-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--green);
+    background: var(--green-dim);
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1px solid rgba(0,255,106,0.15);
+  }
+
+  .live-pill .dot {
+    width: 5px;
+    height: 5px;
+    background: var(--green);
+    border-radius: 50%;
+    animation: blink 2s infinite;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.2; }
+  }
+
+  /* ===== STATS ===== */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    padding: 20px 0;
+  }
+
+  .stat {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 12px;
+    text-align: center;
+  }
+
+  .stat-label {
+    font-size: 9px;
+    font-weight: 600;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 6px;
+  }
+
+  .stat-val {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--green);
+  }
+
+  .stat-val.neg { color: var(--red); }
+
+  /* ===== CAPPER TABS ===== */
+  .tabs {
+    display: flex;
+    gap: 6px;
+    padding: 14px 0 18px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .tabs::-webkit-scrollbar { display: none; }
+
+  .tab {
+    flex-shrink: 0;
+    background: var(--card);
+    color: var(--text-mid);
+    border: 1px solid var(--border);
+    font-family: 'Outfit', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 7px 18px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.5px;
+  }
+
+  .tab:hover { border-color: var(--text-dim); color: var(--text); }
+
+  .tab.active {
+    background: var(--green);
+    color: #000;
+    border-color: var(--green);
+    font-weight: 700;
+  }
+
+  /* ===== SECTION LABEL ===== */
+  .day-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    padding: 22px 0 10px;
+  }
+
+  /* ===== PICK CARDS ===== */
+  .pick {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background 0.15s;
+    position: relative;
+  }
+
+  .pick:hover { background: var(--card-hover); }
+
+  .pick::after {
+    content: '';
+    position: absolute;
+    left: 0; top: 8px; bottom: 8px;
+    width: 3px;
+    border-radius: 0 2px 2px 0;
+  }
+
+  .pick.pending::after { background: var(--green); }
+  .pick.win::after { background: var(--green); }
+  .pick.loss::after { background: var(--red); }
+  .pick.push::after { background: var(--yellow); }
+  .pick.void::after { background: var(--text-dim); }
+
+  .pick-left { padding-left: 6px; min-width: 0; }
+
+  .pick-name {
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 400px;
+  }
+
+  .pick-meta {
+    font-size: 11px;
+    color: var(--text-mid);
+    margin-top: 3px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .pick-meta .sep {
+    width: 3px; height: 3px;
+    background: var(--text-dim);
+    border-radius: 50%;
+  }
+
+  .capper-tag {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    padding: 2px 7px;
+    border-radius: 4px;
+    background: rgba(255,255,255,0.06);
+    color: var(--text-mid);
+  }
+
+  .pick-right {
+    text-align: right;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 5px;
+  }
+
+  .pick-units {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 17px;
+    font-weight: 600;
+  }
+
+  .pick.win .pick-units { color: var(--green); }
+  .pick.loss .pick-units { color: var(--red); }
+  .pick.pending .pick-units { color: var(--text); }
+  .pick.push .pick-units { color: var(--yellow); }
+
+  .badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 6px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  .pick.pending .badge { background: var(--green-dim); color: var(--green); }
+  .pick.win .badge { background: var(--green); color: #000; }
+  .pick.loss .badge { background: var(--red); color: #fff; }
+  .pick.push .badge { background: var(--yellow); color: #000; }
+  .pick.void .badge { background: rgba(74,74,74,0.3); color: var(--text-mid); }
+
+  /* ===== EMPTY / LOADING ===== */
+  .empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-dim);
+    font-size: 14px;
+  }
+
+  .loader {
+    text-align: center;
+    padding: 60px 0;
+    color: var(--text-dim);
+    font-size: 13px;
+  }
+
+  .spinner {
+    width: 26px; height: 26px;
+    border: 2px solid var(--border);
+    border-top-color: var(--green);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    margin: 0 auto 14px;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ===== FOOTER ===== */
+  .footer {
+    text-align: center;
+    padding: 36px 0;
+    margin-top: 40px;
+    border-top: 1px solid var(--border);
+  }
+
+  .footer-links {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    margin-bottom: 10px;
+  }
+
+  .footer-links a {
+    color: var(--text-mid);
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: 500;
+    transition: color 0.15s;
+  }
+
+  .footer-links a:hover { color: var(--green); }
+
+  .footer-sub {
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 0.5px;
+  }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 600px) {
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .stat-val { font-size: 17px; }
+    .header-row { flex-direction: column; align-items: flex-start; gap: 14px; }
+    .brand-info h1 { font-size: 18px; }
+    .pick-name { max-width: 200px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="header">
+    <div class="header-row">
+      <div class="brand">
+        <div class="logo">AIA</div>
+        <div class="brand-info">
+          <h1>ALL IN ANALYTICS</h1>
+          <p>by KEVPICKS</p>
+        </div>
+      </div>
+      <div class="live-pill">
+        <span class="dot"></span>
+        LIVE
+      </div>
+    </div>
+  </div>
+
+  <div class="stats" id="stats">
+    <div class="stat">
+      <div class="stat-label">Record</div>
+      <div class="stat-val" id="sRecord">—</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Win %</div>
+      <div class="stat-val" id="sWinPct">—</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">ROI</div>
+      <div class="stat-val" id="sROI">—</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Units</div>
+      <div class="stat-val" id="sUnits">—</div>
+    </div>
+  </div>
+
+  <div class="tabs" id="tabs"></div>
+
+  <div id="feed">
+    <div class="loader">
+      <div class="spinner"></div>
+      Loading picks...
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="footer-links">
+      <a href="https://kevpicks.com" target="_blank">kevpicks.com</a>
+      <a href="https://tiktok.com/@aia.kev" target="_blank">TikTok</a>
+      <a href="https://instagram.com/kevpicks" target="_blank">Instagram</a>
+    </div>
+    <div class="footer-sub">Powered by Supabase — Updated in real time</div>
+  </div>
+</div>
+
+<script>
+  // ===== SUPABASE =====
+  const SUPA_URL = 'https://chzecaadlueoujiqtqrj.supabase.co';
+  const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNoemVjYWFkbHVlb3VqaXF0cXJqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY2NDk0MTgsImV4cCI6MjA5MjIyNTQxOH0.iYY5GJ9IOvpgNrfsHqolVpwX3pCIns8d8P3_RABbWCU';
+  const sb = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+
+  // ===== STATE =====
+  let picks = [];
+  let filter = 'all'; // 'all' or a capper name
+
+  // ===== ELEMENTS =====
+  const feed = document.getElementById('feed');
+  const tabsEl = document.getElementById('tabs');
+
+  // ===== INIT =====
+  async function init() {
+    await load();
+    listenRealtime();
+  }
+
+  // ===== LOAD =====
+  async function load() {
+    try {
+      const { data, error } = await sb
+        .from('picks')
+        .select('*')
+        .order('date', { ascending: false })
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      picks = data || [];
+      buildTabs();
+      render();
+    } catch (e) {
+      console.error('Load error:', e);
+      feed.innerHTML = '<div class="empty">Could not connect to database.</div>';
+    }
+  }
+
+  // ===== STATS =====
+  function calcStats(list) {
+    const settled = list.filter(p => p.result === 'win' || p.result === 'loss');
+    const wins = settled.filter(p => p.result === 'win').length;
+    const losses = settled.filter(p => p.result === 'loss').length;
+    const pushes = list.filter(p => p.result === 'push').length;
+    const pl = list.reduce((s, p) => s + Number(p.profit_loss || 0), 0);
+    const risked = settled.reduce((s, p) => s + Number(p.units), 0);
+    const pct = settled.length ? ((wins / settled.length) * 100) : 0;
+    const roi = risked > 0 ? ((pl / risked) * 100) : 0;
+
+    document.getElementById('sRecord').textContent =
+      `${wins}-${losses}${pushes ? '-' + pushes : ''}`;
+
+    document.getElementById('sWinPct').textContent = `${pct.toFixed(1)}%`;
+
+    const roiEl = document.getElementById('sROI');
+    roiEl.textContent = `${roi >= 0 ? '+' : ''}${roi.toFixed(1)}%`;
+    roiEl.className = `stat-val ${roi < 0 ? 'neg' : ''}`;
+
+    const unitsEl = document.getElementById('sUnits');
+    unitsEl.textContent = `${pl >= 0 ? '+' : ''}${pl.toFixed(1)}`;
+    unitsEl.className = `stat-val ${pl < 0 ? 'neg' : ''}`;
+  }
+
+  // ===== TABS =====
+  function buildTabs() {
+    const cappers = [...new Set(picks.map(p => p.capper).filter(Boolean))];
+    cappers.sort();
+
+    let html = `<button class="tab ${filter === 'all' ? 'active' : ''}" data-f="all">All</button>`;
+    cappers.forEach(c => {
+      html += `<button class="tab ${filter === c ? 'active' : ''}" data-f="${esc(c)}">${esc(c)}</button>`;
+    });
+    tabsEl.innerHTML = html;
+
+    tabsEl.querySelectorAll('.tab').forEach(btn => {
+      btn.addEventListener('click', () => {
+        filter = btn.dataset.f;
+        tabsEl.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        render();
+      });
+    });
+  }
+
+  // ===== RENDER =====
+  function render() {
+    const filtered = filter === 'all'
+      ? picks
+      : picks.filter(p => p.capper === filter);
+
+    calcStats(filtered);
+
+    if (!filtered.length) {
+      feed.innerHTML = `<div class="empty">No picks${filter !== 'all' ? ' for ' + filter : ''} yet.</div>`;
+      return;
+    }
+
+    // Group by date
+    const groups = {};
+    filtered.forEach(p => {
+      if (!groups[p.date]) groups[p.date] = [];
+      groups[p.date].push(p);
+    });
+
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+    const yd = new Date(now); yd.setDate(yd.getDate()-1);
+    const yesterday = `${yd.getFullYear()}-${String(yd.getMonth()+1).padStart(2,'0')}-${String(yd.getDate()).padStart(2,'0')}`;
+
+    let html = '';
+    Object.keys(groups).sort((a, b) => b.localeCompare(a)).forEach(date => {
+      let label;
+      if (date === today) label = "Today";
+      else if (date === yesterday) label = "Yesterday";
+      else {
+        const d = new Date(date + 'T12:00:00');
+        label = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+      }
+
+      html += `<div class="day-label">${label}</div>`;
+
+      groups[date].forEach(p => {
+        const odds = p.american_odds >= 0 ? `+${p.american_odds}` : `${p.american_odds}`;
+        const units = Number(p.units).toFixed(1);
+        const result = p.result || 'pending';
+
+        let badgeText = result.toUpperCase();
+        if (result === 'win') badgeText = `WIN +${Number(p.profit_loss).toFixed(2)}U`;
+        else if (result === 'loss') badgeText = `LOSS ${Number(p.profit_loss).toFixed(2)}U`;
+
+        html += `
+          <div class="pick ${result}">
+            <div class="pick-left">
+              <div class="pick-name">${esc(p.pick)}</div>
+              <div class="pick-meta">
+                <span class="capper-tag">${esc(p.capper || '—')}</span>
+                <span class="sep"></span>
+                <span>${odds}</span>
+                <span class="sep"></span>
+                <span>${units}U</span>
+              </div>
+            </div>
+            <div class="pick-right">
+              <div class="pick-units">${units}U</div>
+              <div class="badge">${badgeText}</div>
+            </div>
+          </div>`;
+      });
+    });
+
+    feed.innerHTML = html;
+  }
+
+  // ===== REALTIME =====
+  function listenRealtime() {
+    sb.channel('picks-live')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'picks' }, () => {
+        load();
+      })
+      .subscribe();
+  }
+
+  // ===== HELPERS =====
+  function esc(s) {
+    const d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+  }
+
+  init();
+</script>
+
+</body>
+</html>
