@@ -1,1 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>AIA Cappers Panel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --green: #00ff6a;
+    --green-dim: rgba(0, 255, 106, 0.12);
+    --green-glow: rgba(0, 255, 106, 0.25);
+    --red: #ff3b3b;
+    --red-dim: rgba(255, 59, 59, 0.12);
+    --yellow: #ffd000;
+    --bg: #030303;
+    --card: #0f0f0f;
+    --card-hover: #161616;
+    --border: #1c1c1c;
+    --text: #f0f0f0;
+    --text-mid: #b0b0b0;
+    --text-dim: #606060;
+    --input-bg: #141414;
+  }
 
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Outfit', -apple-system, sans-serif;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 0 20px;
+  }
+
+  /* ===== LOGIN ===== */
+  .login-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    gap: 20px;
+  }
+
+  .login-logo {
+    width: 60px;
+    height: 60px;
+    background: var(--green);
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 22px;
+    color: #000;
+    box-shadow: 0 0 30px var(--green-glow);
+  }
+
+  .login-title {
+    font-size: 22px;
+    font-weight: 700;
+  }
+
+  .login-sub {
+    font-size: 13px;
+    color: var(--text-dim);
+  }
+
+  .login-input {
+    width: 280px;
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'Outfit', sans-serif;
+    font-size: 15px;
+    padding: 12px 16px;
+    border-radius: 10px;
+    outline: none;
+    text-align: center;
+    letter-spacing: 2px;
+  }
+
+  .login-input:focus { border-color: var(--green); }
+
+  .login-input::placeholder { color: var(--text-dim); letter-spacing: 0; }
+
+  .login-btn {
+    width: 280px;
+    background: var(--green);
+    color: #000;
+    border: none;
+    font-family: 'Outfit', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    padding: 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+  }
+
+  .login-btn:hover { opacity: 0.9; }
+
+  .login-error {
+    color: var(--red);
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  /* ===== HEADER ===== */
+  .header {
+    padding: 30px 0 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .header-logo {
+    width: 40px;
+    height: 40px;
+    background: var(--green);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 15px;
+    color: #000;
+  }
+
+  .header h1 {
+    font-size: 18px;
+    font-weight: 700;
+  }
+
+  .logout-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    font-family: 'Outfit', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 6px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+
+  .logout-btn:hover { border-color: var(--red); color: var(--red); }
+
+  /* ===== ADD PICK FORM ===== */
+  .form-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    margin-top: 20px;
+  }
+
+  .form-card h2 {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 16px;
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .form-row-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .form-group.full {
+    grid-column: 1 / -1;
+  }
+
+  .form-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .form-input, .form-select {
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'Outfit', sans-serif;
+    font-size: 14px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    outline: none;
+  }
+
+  .form-input:focus, .form-select:focus { border-color: var(--green); }
+
+  .form-select { cursor: pointer; }
+  .form-select option { background: var(--card); }
+
+  .submit-btn {
+    width: 100%;
+    background: var(--green);
+    color: #000;
+    border: none;
+    font-family: 'Outfit', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    padding: 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    margin-top: 10px;
+    letter-spacing: 0.5px;
+  }
+
+  .submit-btn:hover { opacity: 0.9; }
+
+  /* ===== PICKS LIST ===== */
+  .section-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    padding: 24px 0 12px;
+  }
+
+  .pick-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 6px;
+    position: relative;
+  }
+
+  .pick-card::after {
+    content: '';
+    position: absolute;
+    left: 0; top: 8px; bottom: 8px;
+    width: 3px;
+    border-radius: 0 2px 2px 0;
+  }
+
+  .pick-card.pending::after { background: var(--green); }
+  .pick-card.win::after { background: var(--green); }
+  .pick-card.loss::after { background: var(--red); }
+  .pick-card.push::after { background: var(--yellow); }
+
+  .pick-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding-left: 6px;
+  }
+
+  .pick-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #fff;
+  }
+
+  .pick-meta {
+    font-size: 11px;
+    color: var(--text-mid);
+    margin-top: 3px;
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .pick-meta .sep {
+    width: 3px; height: 3px;
+    background: var(--text-dim);
+    border-radius: 50%;
+  }
+
+  .capper-tag {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: var(--green-dim);
+    color: var(--green);
+  }
+
+  .pick-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 6px;
+    text-transform: uppercase;
+  }
+
+  .pick-card.pending .pick-badge { background: var(--green-dim); color: var(--green); }
+  .pick-card.win .pick-badge { background: var(--green); color: #000; }
+  .pick-card.loss .pick-badge { background: var(--red); color: #fff; }
+  .pick-card.push .pick-badge { background: var(--yellow); color: #000; }
+
+  .pick-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 10px;
+    padding-left: 6px;
+  }
+
+  .action-btn {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 5px 12px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+
+  .action-btn:hover { opacity: 0.8; }
+
+  .btn-win { background: var(--green); color: #000; }
+  .btn-loss { background: var(--red); color: #fff; }
+  .btn-push { background: var(--yellow); color: #000; }
+  .btn-delete { background: none; border: 1px solid var(--border); color: var(--text-dim); }
+  .btn-delete:hover { border-color: var(--red); color: var(--red); }
+  .btn-pending { background: none; border: 1px solid var(--border); color: var(--text-mid); }
+
+  /* ===== TOAST ===== */
+  .toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--green);
+    color: #000;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 10px 24px;
+    border-radius: 10px;
+    opacity: 0;
+    transition: all 0.3s;
+    z-index: 100;
+  }
+
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast.error { background: var(--red); color: #fff; }
+
+  /* ===== EMPTY ===== */
+  .empty {
+    text-align: center;
+    padding: 40px;
+    color: var(--text-dim);
+    font-size: 14px;
+  }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 600px) {
+    .form-row, .form-row-3 { grid-template-columns: 1fr; }
+    .header h1 { font-size: 15px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Login Screen -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-logo">AIA</div>
+  <div class="login-title">Cappers Panel</div>
+  <div class="login-sub">Enter password to access</div>
+  <input type="password" class="login-input" id="passwordInput" placeholder="Password" autofocus>
+  <button class="login-btn" id="loginBtn">Enter</button>
+  <div class="login-error" id="loginError"></div>
+</div>
+
+<!-- Main Panel (hidden until login) -->
+<div class="wrap" id="mainPanel" style="display: none;">
+  <div class="header">
+    <div class="header-left">
+      <div class="header-logo">AIA</div>
+      <h1>Cappers Panel</h1>
+    </div>
+    <button class="logout-btn" id="logoutBtn">Log out</button>
+  </div>
+
+  <!-- Add Pick Form -->
+  <div class="form-card">
+    <h2>Add Pick</h2>
+    <div class="form-group full" style="margin-bottom: 10px;">
+      <label class="form-label">Pick</label>
+      <input type="text" class="form-input" id="fPick" placeholder="e.g. Jaylen Brown U26.5 Pts">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Capper</label>
+        <select class="form-select" id="fCapper">
+          <option value="SWAVY">SWAVY</option>
+          <option value="SURTAIN">SURTAIN</option>
+          <option value="AARON">AARON</option>
+          <option value="KEVIN" selected>KEVIN</option>
+          <option value="BEEZY">BEEZY</option>
+          <option value="RICH">RICH</option>
+          <option value="NOBO">NOBO</option>
+          <option value="CARRY">CARRY</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Date</label>
+        <input type="date" class="form-input" id="fDate">
+      </div>
+    </div>
+    <div class="form-row-3">
+      <div class="form-group">
+        <label class="form-label">Odds (American)</label>
+        <input type="number" class="form-input" id="fOdds" placeholder="-110">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Units</label>
+        <input type="number" class="form-input" id="fUnits" step="0.5" min="0.5" placeholder="1.0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Result</label>
+        <select class="form-select" id="fResult">
+          <option value="pending">Pending</option>
+          <option value="win">Win</option>
+          <option value="loss">Loss</option>
+          <option value="push">Push</option>
+        </select>
+      </div>
+    </div>
+    <button class="submit-btn" id="addBtn">Add Pick</button>
+  </div>
+
+  <!-- Filter -->
+  <div style="display: flex; gap: 6px; padding-top: 20px; overflow-x: auto;" id="capperFilter"></div>
+
+  <!-- Picks List -->
+  <div class="section-title">Recent Picks</div>
+  <div id="picksList"></div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+  // ===== CONFIG =====
+  const SUPA_URL = 'https://chzecaadlueoujiqtqrj.supabase.co';
+  const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNoemVjYWFkbHVlb3VqaXF0cXJqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY2NDk0MTgsImV4cCI6MjA5MjIyNTQxOH0.iYY5GJ9IOvpgNrfsHqolVpwX3pCIns8d8P3_RABbWCU';
+  const sb = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+  const PASSWORD = 'allin2026';
+
+  // ===== STATE =====
+  let picks = [];
+  let filterCapper = 'all';
+
+  // ===== ELEMENTS =====
+  const loginScreen = document.getElementById('loginScreen');
+  const mainPanel = document.getElementById('mainPanel');
+  const passwordInput = document.getElementById('passwordInput');
+  const loginError = document.getElementById('loginError');
+  const picksList = document.getElementById('picksList');
+  const toast = document.getElementById('toast');
+
+  // Set default date to today
+  document.getElementById('fDate').value = localDate(new Date());
+
+  // ===== LOGIN =====
+  document.getElementById('loginBtn').addEventListener('click', doLogin);
+  passwordInput.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+  function doLogin() {
+    const pw = passwordInput.value.trim();
+    if (pw === PASSWORD) {
+      loginScreen.style.display = 'none';
+      mainPanel.style.display = 'block';
+      sessionStorage.setItem('aia_auth', '1');
+      loadPicks();
+    } else {
+      loginError.textContent = 'Wrong password';
+      passwordInput.value = '';
+    }
+  }
+
+  // Auto-login if already authenticated
+  if (sessionStorage.getItem('aia_auth') === '1') {
+    loginScreen.style.display = 'none';
+    mainPanel.style.display = 'block';
+    loadPicks();
+  }
+
+  document.getElementById('logoutBtn').addEventListener('click', () => {
+    sessionStorage.removeItem('aia_auth');
+    loginScreen.style.display = 'flex';
+    mainPanel.style.display = 'none';
+    passwordInput.value = '';
+    loginError.textContent = '';
+  });
+
+  // ===== LOAD PICKS =====
+  async function loadPicks() {
+    try {
+      const { data, error } = await sb
+        .from('picks')
+        .select('*')
+        .order('date', { ascending: false })
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      picks = data || [];
+      buildCapperFilter();
+      renderPicks();
+    } catch (e) {
+      console.error('Load error:', e);
+      picksList.innerHTML = '<div class="empty">Could not load picks.</div>';
+    }
+  }
+
+  // ===== CAPPER FILTER =====
+  function buildCapperFilter() {
+    const cappers = [...new Set(picks.map(p => p.capper).filter(Boolean))].sort();
+    const el = document.getElementById('capperFilter');
+    let html = `<button class="action-btn ${filterCapper === 'all' ? 'btn-win' : 'btn-pending'}" onclick="setFilter('all')">All</button>`;
+    cappers.forEach(c => {
+      html += `<button class="action-btn ${filterCapper === c ? 'btn-win' : 'btn-pending'}" onclick="setFilter('${esc(c)}')">${esc(c)}</button>`;
+    });
+    el.innerHTML = html;
+  }
+
+  function setFilter(c) {
+    filterCapper = c;
+    buildCapperFilter();
+    renderPicks();
+  }
+
+  // ===== RENDER PICKS =====
+  function renderPicks() {
+    const filtered = filterCapper === 'all' ? picks : picks.filter(p => p.capper === filterCapper);
+
+    if (!filtered.length) {
+      picksList.innerHTML = '<div class="empty">No picks.</div>';
+      return;
+    }
+
+    const today = localDate(new Date());
+    const yd = new Date(); yd.setDate(yd.getDate()-1);
+    const yesterday = localDate(yd);
+
+    // Group by date
+    const groups = {};
+    filtered.forEach(p => {
+      if (!groups[p.date]) groups[p.date] = [];
+      groups[p.date].push(p);
+    });
+
+    let html = '';
+    Object.keys(groups).sort((a, b) => b.localeCompare(a)).forEach(date => {
+      let label;
+      if (date === today) label = 'Today';
+      else if (date === yesterday) label = 'Yesterday';
+      else {
+        const d = new Date(date + 'T12:00:00');
+        label = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+      }
+
+      html += `<div class="section-title">${label}</div>`;
+
+      groups[date].forEach(p => {
+        const odds = p.american_odds >= 0 ? `+${p.american_odds}` : `${p.american_odds}`;
+        const units = Number(p.units).toFixed(1);
+        const result = p.result || 'pending';
+
+        let badgeText = result.toUpperCase();
+        if (result === 'win') badgeText = `WIN +${Number(p.profit_loss).toFixed(2)}U`;
+        else if (result === 'loss') badgeText = `LOSS ${Number(p.profit_loss).toFixed(2)}U`;
+
+        html += `
+          <div class="pick-card ${result}">
+            <div class="pick-top">
+              <div>
+                <div class="pick-name">${esc(p.pick)}</div>
+                <div class="pick-meta">
+                  <span class="capper-tag">${esc(p.capper)}</span>
+                  <span class="sep"></span>
+                  <span>${odds}</span>
+                  <span class="sep"></span>
+                  <span>${units}U</span>
+                </div>
+              </div>
+              <div class="pick-badge">${badgeText}</div>
+            </div>
+            <div class="pick-actions">
+              ${result === 'pending' ? `
+                <button class="action-btn btn-win" onclick="gradeWin('${p.id}', ${p.units}, ${p.american_odds})">Win</button>
+                <button class="action-btn btn-loss" onclick="gradeLoss('${p.id}', ${p.units})">Loss</button>
+                <button class="action-btn btn-push" onclick="gradePush('${p.id}')">Push</button>
+              ` : `
+                <button class="action-btn btn-pending" onclick="gradePending('${p.id}')">Revert</button>
+              `}
+              <button class="action-btn btn-delete" onclick="deletePick('${p.id}')">Delete</button>
+            </div>
+          </div>`;
+      });
+    });
+
+    picksList.innerHTML = html;
+  }
+
+  // ===== ADD PICK =====
+  document.getElementById('addBtn').addEventListener('click', async () => {
+    const pick = document.getElementById('fPick').value.trim();
+    const capper = document.getElementById('fCapper').value;
+    const date = document.getElementById('fDate').value;
+    const odds = parseInt(document.getElementById('fOdds').value);
+    const units = parseFloat(document.getElementById('fUnits').value) || 1.0;
+    const result = document.getElementById('fResult').value;
+
+    if (!pick || !date || isNaN(odds)) {
+      showToast('Fill in all fields', true);
+      return;
+    }
+
+    let profitLoss = 0;
+    if (result === 'win') {
+      profitLoss = odds > 0 ? units * (odds / 100) : units * (100 / Math.abs(odds));
+      profitLoss = Math.round(profitLoss * 100) / 100;
+    } else if (result === 'loss') {
+      profitLoss = -units;
+    }
+
+    try {
+      const { error } = await sb.from('picks').insert([{
+        id: crypto.randomUUID(),
+        pick, capper, date,
+        american_odds: odds,
+        units,
+        result,
+        profit_loss: profitLoss,
+        is_visible: true
+      }]);
+
+      if (error) throw error;
+
+      showToast('Pick added!');
+      document.getElementById('fPick').value = '';
+      document.getElementById('fOdds').value = '';
+      document.getElementById('fUnits').value = '';
+      document.getElementById('fResult').value = 'pending';
+      await loadPicks();
+    } catch (e) {
+      console.error('Add error:', e);
+      showToast('Failed to add pick', true);
+    }
+  });
+
+  // ===== GRADE PICKS =====
+  async function gradeWin(id, units, odds) {
+    let pl = odds > 0 ? units * (odds / 100) : units * (100 / Math.abs(odds));
+    pl = Math.round(pl * 100) / 100;
+    await updatePick(id, 'win', pl);
+  }
+
+  async function gradeLoss(id, units) {
+    await updatePick(id, 'loss', -units);
+  }
+
+  async function gradePush(id) {
+    await updatePick(id, 'push', 0);
+  }
+
+  async function gradePending(id) {
+    await updatePick(id, 'pending', 0);
+  }
+
+  async function updatePick(id, result, profitLoss) {
+    try {
+      const { error } = await sb
+        .from('picks')
+        .update({ result, profit_loss: profitLoss })
+        .eq('id', id);
+
+      if (error) throw error;
+      showToast(`Marked as ${result.toUpperCase()}`);
+      await loadPicks();
+    } catch (e) {
+      console.error('Update error:', e);
+      showToast('Failed to update', true);
+    }
+  }
+
+  // ===== DELETE PICK =====
+  async function deletePick(id) {
+    if (!confirm('Delete this pick?')) return;
+
+    try {
+      const { error } = await sb
+        .from('picks')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      showToast('Pick deleted');
+      await loadPicks();
+    } catch (e) {
+      console.error('Delete error:', e);
+      showToast('Failed to delete', true);
+    }
+  }
+
+  // ===== HELPERS =====
+  function localDate(d) {
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+
+  function esc(s) {
+    const d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+  }
+
+  function showToast(msg, isError) {
+    toast.textContent = msg;
+    toast.className = `toast show ${isError ? 'error' : ''}`;
+    setTimeout(() => { toast.className = 'toast'; }, 2500);
+  }
+</script>
+
+</body>
+</html>
